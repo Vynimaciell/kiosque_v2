@@ -1,0 +1,4 @@
+database/kiosque.db 
+__pycache__/ 
+*.pyc 
+*.db 
