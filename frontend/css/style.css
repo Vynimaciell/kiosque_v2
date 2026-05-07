@@ -484,3 +484,129 @@ table.reservas tbody td { padding: .75rem 1rem; }
   .confirm-foot     { flex-direction: column; }
   .pag-grid         { grid-template-columns: 1fr 1fr; }
 }
+
+/* ── NAVBAR MOBILE ── */
+@media (max-width: 600px) {
+  .nav {
+    padding: .7rem 1rem;
+    flex-wrap: nowrap;
+    gap: .5rem;
+  }
+  .nav-brand {
+    font-size: 1.1rem;
+    white-space: nowrap;
+  }
+  .nav-links {
+    gap: .3rem;
+    flex-shrink: 0;
+  }
+  .nav-links a {
+    font-size: .75rem;
+    padding: .3rem .55rem;
+    white-space: nowrap;
+  }
+}
+
+/* ── STATS BAR MOBILE ── */
+@media (max-width: 600px) {
+  .stats-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+  .stat {
+    padding: .75rem 1rem;
+    border-right: none;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    max-width: 100%;
+  }
+  .stat:nth-child(odd) {
+    border-right: 1px solid rgba(255,255,255,.08);
+  }
+  .stat-num { font-size: 1.25rem; }
+  .stat-lbl { font-size: .68rem; }
+}
+
+/* ── HERO MOBILE ── */
+@media (max-width: 600px) {
+  .hero-kiosque { height: 220px; }
+  .hero-kiosque-txt { padding: 1.25rem; }
+  .hero-kiosque-txt h1 { font-size: 1.6rem; }
+}
+
+/* ── GRID QUIOSQUES MOBILE ── */
+@media (max-width: 600px) {
+  .grid-quiosques {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .wrap { padding: 1.25rem 1rem; }
+}
+
+/* ── PÁGINA DE RESERVA MOBILE ── */
+@media (max-width: 600px) {
+  .reserva-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem;
+  }
+  .wrap, .wrap-md {
+    padding: 1rem .85rem;
+  }
+  .panel-head h2 { font-size: 1.1rem; }
+  .panel-body { padding: 1rem; }
+  .pag-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: .5rem;
+  }
+  .campos-cartao {
+    grid-template-columns: 1fr 1fr;
+    gap: .5rem;
+  }
+}
+
+/* ── CONFIRMAÇÃO MOBILE ── */
+@media (max-width: 600px) {
+  .confirm-head { padding: 1.75rem 1.25rem; }
+  .confirm-head h2 { font-size: 1.4rem; }
+  .confirm-body { padding: 1.25rem; }
+  .confirm-foot {
+    flex-direction: column;
+    padding: 1rem 1.25rem;
+    gap: .65rem;
+  }
+  .confirm-foot .btn { width: 100%; text-align: center; }
+}
+
+/* ── TABELA MINHAS RESERVAS MOBILE ── */
+@media (max-width: 600px) {
+  table.reservas { font-size: .72rem; }
+  table.reservas thead th,
+  table.reservas tbody td { padding: .5rem .6rem; }
+  /* Esconde colunas menos importantes */
+  table.reservas th:nth-child(5),
+  table.reservas td:nth-child(5),
+  table.reservas th:nth-child(8),
+  table.reservas td:nth-child(8) { display: none; }
+}
+
+/* ── CALENDÁRIO MOBILE ── */
+@media (max-width: 600px) {
+  .cal-wrap { padding: .6rem; }
+  .cal-day { height: 26px; font-size: .72rem; }
+  .cal-dow { font-size: .6rem; }
+  .cal-legenda { gap: .6rem; }
+  .leg-item { font-size: .65rem; }
+}
+
+/* ── CARTÃO VISUAL MOBILE ── */
+@media (max-width: 600px) {
+  .cartao { padding: 1rem 1.1rem; }
+  .cartao-numero { font-size: .82rem; letter-spacing: .12em; }
+}
+
+/* ── BANNER INFERIOR MOBILE ── */
+@media (max-width: 600px) {
+  .banner-inferior { height: 130px; border-radius: 10px; }
+  .banner-inferior-txt h3 { font-size: 1.1rem; }
+  .banner-inferior-txt p { font-size: .78rem; }
+}
