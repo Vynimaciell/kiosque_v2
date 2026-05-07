@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiosques — Kiosque Rental</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    /* ── HERO TEMÁTICO ── */
+    .hero-kiosque {
+      position: relative;
+      height: 300px;
+      overflow: hidden;
+      display: flex;
+      align-items: flex-end;
+    }
+    .hero-kiosque img {
+      position: absolute;
+      inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      object-position: center 60%;
+    }
+    .hero-kiosque-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(26,46,31,0.1) 0%,
+        rgba(26,46,31,0.85) 100%
+      );
+    }
+    .hero-kiosque-txt {
+      position: relative;
+      z-index: 2;
+      padding: 2rem 2.5rem;
+      color: #fff;
+      width: 100%;
+    }
+    .hero-kiosque-txt h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.4rem;
+      line-height: 1.15;
+    }
+    .hero-kiosque-txt h1 em { color: var(--dourado-cl); font-style: normal; }
+    .hero-kiosque-txt p { opacity: .8; margin-top: .4rem; font-size: .97rem; }
+
+    /* ── STATS BAR ── */
+    .stats-bar {
+      background: var(--escuro);
+      display: flex;
+      justify-content: center;
+      gap: 0;
+    }
+    .stat {
+      padding: .9rem 2.5rem;
+      text-align: center;
+      border-right: 1px solid rgba(255,255,255,.08);
+      flex: 1;
+      max-width: 200px;
+    }
+    .stat:last-child { border-right: none; }
+    .stat-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem;
+      color: var(--dourado-cl);
+      font-weight: 700;
+    }
+    .stat-lbl { font-size: .72rem; color: rgba(255,255,255,.55); margin-top: .1rem; letter-spacing: .04em; }
+
+    /* ── CARDS COM FOTO ── */
+    .cards-titulo {
+      margin-bottom: 1.5rem;
+    }
+    .cards-titulo h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem;
+      color: var(--escuro);
+    }
+    .cards-titulo p { color: var(--cinza); font-size: .9rem; margin-top: .2rem; }
+
+    .grid-quiosques {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .qcard {
+      background: #fff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 2px 16px rgba(30,60,30,.09);
+      transition: transform .22s, box-shadow .22s;
+      display: flex;
+      flex-direction: column;
+    }
+    .qcard:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 12px 36px rgba(30,60,30,.16);
+    }
+
+    /* Foto do quiosque */
+    .qcard-foto {
+      position: relative;
+      height: 190px;
+      overflow: hidden;
+    }
+    .qcard-foto img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      transition: transform .4s;
+    }
+    .qcard:hover .qcard-foto img { transform: scale(1.05); }
+    .qcard-foto-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, transparent 40%, rgba(26,46,31,.6) 100%);
+    }
+    .qcard-badge {
+      position: absolute;
+      top: .75rem; left: .75rem;
+      background: rgba(26,46,31,.82);
+      color: var(--dourado-cl);
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: .28rem .7rem;
+      border-radius: 50px;
+    }
+    .qcard-preco-foto {
+      position: absolute;
+      bottom: .75rem; right: .75rem;
+      background: rgba(181,135,58,.92);
+      color: #fff;
+      font-size: .85rem;
+      font-weight: 700;
+      padding: .3rem .75rem;
+      border-radius: 50px;
+    }
+
+    /* Corpo do card */
+    .qcard-body { padding: 1.1rem 1.2rem; flex: 1; }
+    .qcard-body h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      color: var(--escuro);
+      margin-bottom: .4rem;
+    }
+    .qcard-body p { font-size: .84rem; color: var(--cinza); line-height: 1.55; }
+
+    .qcard-info {
+      display: flex;
+      gap: 1rem;
+      margin-top: .9rem;
+      padding-top: .9rem;
+      border-top: 1px solid var(--verde-suave);
+    }
+    .qi { display: flex; align-items: center; gap: .3rem; font-size: .78rem; color: var(--cinza); }
+    .qi strong { color: var(--escuro); }
+
+    .qcard-foot {
+      padding: .9rem 1.2rem;
+    }
+    .btn-reservar {
+      display: block;
+      width: 100%;
+      padding: .7rem;
+      background: var(--verde);
+      color: #fff;
+      text-align: center;
+      border-radius: 50px;
+      font-weight: 700;
+      font-size: .9rem;
+      text-decoration: none;
+      transition: background .18s, transform .15s;
+      letter-spacing: .02em;
+    }
+    .btn-reservar:hover { background: var(--verde-hover); transform: scale(1.02); }
+
+    /* ── BANNER INFERIOR ── */
+    .banner-inferior {
+      position: relative;
+      margin-top: 3rem;
+      border-radius: 16px;
+      overflow: hidden;
+      height: 180px;
+      display: flex;
+      align-items: center;
+    }
+    .banner-inferior img {
+      position: absolute;
+      inset: 0; width: 100%; height: 100%;
+      object-fit: cover;
+      object-position: center 40%;
+    }
+    .banner-inferior-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to right, rgba(26,46,31,.88) 0%, rgba(26,46,31,.4) 100%);
+    }
+    .banner-inferior-txt {
+      position: relative;
+      z-index: 2;
+      padding: 2rem;
+      color: #fff;
+    }
+    .banner-inferior-txt h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem;
+      margin-bottom: .35rem;
+    }
+    .banner-inferior-txt p { font-size: .88rem; opacity: .8; }
+  </style>
+</head>
+<body>
+
+<!-- ── NAVBAR ── -->
+<nav class="nav">
+  <a href="{{ url_for('main.quiosques') }}" class="nav-brand">🏝️ Kiosque <span>Rental</span></a>
+  <div class="nav-links">
+    <a href="{{ url_for('main.quiosques') }}" class="active">Quiosques</a>
+    <a href="{{ url_for('main.minhas_reservas') }}">Minhas Reservas</a>
+    <a href="{{ url_for('main.logout') }}" class="nav-sair">Sair</a>
+  </div>
+</nav>
+
+<!-- ── HERO COM FOTO ── -->
+<div class="hero-kiosque">
+  <img
+    src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1600&q=80&auto=format&fit=crop"
+    alt="Quiosques à beira-mar"
+  >
+  <div class="hero-kiosque-overlay"></div>
+  <div class="hero-kiosque-txt">
+    <h1>Alugue o quiosque <em>ideal</em><br>para o seu momento</h1>
+    <p>Espaços exclusivos • Reserva online • Confirmação imediata</p>
+  </div>
+</div>
+
+<!-- ── BARRA DE STATS ── -->
+<div class="stats-bar">
+  <div class="stat">
+    <div class="stat-num">4</div>
+    <div class="stat-lbl">Quiosques disponíveis</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">100%</div>
+    <div class="stat-lbl">Reserva online</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">4</div>
+    <div class="stat-lbl">Formas de pagamento</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">24h</div>
+    <div class="stat-lbl">Confirmação rápida</div>
+  </div>
+</div>
+
+<!-- ── CARDS ── -->
+<div class="wrap" style="padding-top: 2rem;">
+
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in msgs %}
+      <div class="alert alert-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <div class="cards-titulo">
+    <h2>Nossos Quiosques</h2>
+    <p>Escolha o espaço perfeito e reserve com apenas alguns cliques</p>
+  </div>
+
+  {# Fotos do Unsplash por tema de cada quiosque #}
+  {% set fotos = [
+    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&q=80&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&q=80&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1540541338287-41700207dee6?w=600&q=80&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1448375240586-882707db888b?w=600&q=80&auto=format&fit=crop'
+  ] %}
+  {% set alts = [
+    'Quiosque à beira-mar com vista para o oceano',
+    'Jardim florido e área de lazer ao ar livre',
+    'Área de piscina com espreguiçadeiras',
+    'Bosque natural com luz solar entre as árvores'
+  ] %}
+  {% set icones = ['🏖️', '🌿', '🏊', '🌲'] %}
+  {% set temas  = ['Beira Mar', 'Jardim', 'Piscina', 'Bosque'] %}
+
+  <div class="grid-quiosques">
+    {% for q in quiosques %}
+    <div class="qcard">
+
+      <div class="qcard-foto">
+        <img src="{{ fotos[loop.index0] }}" alt="{{ alts[loop.index0] }}" loading="lazy">
+        <div class="qcard-foto-overlay"></div>
+        <div class="qcard-badge">{{ icones[loop.index0] }} {{ temas[loop.index0] }}</div>
+        <div class="qcard-preco-foto">R$ {{ "%.0f"|format(q.preco_dia) }}/dia</div>
+      </div>
+
+      <div class="qcard-body">
+        <h3>{{ q.nome }}</h3>
+        <p>{{ q.descricao }}</p>
+        <div class="qcard-info">
+          <div class="qi">👥 <strong>{{ q.capacidade }}</strong> pessoas</div>
+          <div class="qi">📍 <strong>Espaço #{{ q.id }}</strong></div>
+        </div>
+      </div>
+
+      <div class="qcard-foot">
+        <a href="{{ url_for('main.reserva', quiosque_id=q.id) }}" class="btn-reservar">
+          Reservar Agora →
+        </a>
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- ── BANNER INFERIOR ── -->
+  <div class="banner-inferior">
+    <img
+      src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1200&q=80&auto=format&fit=crop"
+      alt="Momentos especiais ao ar livre"
+      loading="lazy"
+    >
+    <div class="banner-inferior-overlay"></div>
+    <div class="banner-inferior-txt">
+      <h3>🌅 Momentos que ficam na memória</h3>
+      <p>Reserve agora e garanta seu espaço para a data especial.</p>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+</body>
+</html>

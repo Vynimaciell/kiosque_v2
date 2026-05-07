@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minhas Reservas — Kiosque Rental</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <a href="{{ url_for('main.quiosques') }}" class="nav-brand">🏝️ Kiosque <span>Rental</span></a>
+  <div class="nav-links">
+    <a href="{{ url_for('main.quiosques') }}">Quiosques</a>
+    <a href="{{ url_for('main.minhas_reservas') }}" class="active">Minhas Reservas</a>
+    <a href="{{ url_for('main.logout') }}" class="nav-sair">Sair</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <h1>Minhas <em>Reservas</em></h1>
+  <p>Gerencie todas as suas reservas em um só lugar</p>
+</div>
+
+<div class="wrap">
+
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in msgs %}
+      <div class="alert alert-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  {% if reservas %}
+  <div class="table-wrap">
+    <table class="reservas">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Quiosque</th>
+          <th>Responsável</th>
+          <th>Data</th>
+          <th>Valor</th>
+          <th>Pagamento</th>
+          <th>Status</th>
+          <th>Ação</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in reservas %}
+        <tr>
+          <td><strong>#{{ "%04d"|format(r.id) }}</strong></td>
+          <td>{{ r.quiosque_nome }}</td>
+          <td>{{ r.nome_cliente }}</td>
+          <td>{{ r.data_inicio }}</td>
+          <td>{{ r.data_fim }}</td>
+          <td>{{ r.total_dias }}d</td>
+          <td><strong>R$ {{ "%.2f"|format(r.preco_dia * r.total_dias) }}</strong></td>
+          <td>{{ r.forma_pagamento }}</td>
+          <td>
+            {% if r.status == 'confirmada' %}
+              <span class="badge badge-ok">✅ Confirmada</span>
+            {% else %}
+              <span class="badge badge-off">❌ Cancelada</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if r.status == 'confirmada' %}
+            <form method="POST" action="{{ url_for('main.cancelar', grupo_id=r.grupo_id) }}"
+                  onsubmit="return confirm('Cancelar todas as diárias desta reserva?')">
+              <button type="submit" class="btn btn-danger">Cancelar</button>
+            </form>
+            {% else %}
+              <span style="color:var(--cinza); font-size:.8rem;">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% else %}
+  <div class="empty">
+    <div class="ico">🏝️</div>
+    <h3>Nenhuma reserva ainda</h3>
+    <p>Você ainda não fez nenhuma reserva. Escolha um quiosque e comece agora!</p>
+    <a href="{{ url_for('main.quiosques') }}" class="btn btn-primary" style="margin-top:1.25rem;">
+      Ver Quiosques
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+</body>
+</html>

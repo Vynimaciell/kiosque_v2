@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — Kiosque Rental</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body { min-height: 100vh; display: flex; font-family: 'DM Sans', sans-serif; }
+
+    /* ── LADO ESQUERDO: imagem + overlay ── */
+    .login-imagem {
+      flex: 1.1;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 3rem;
+    }
+    .login-imagem img {
+      position: absolute;
+      inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      object-position: center;
+    }
+    .login-imagem-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(26,46,31,0.25) 0%,
+        rgba(26,46,31,0.75) 70%,
+        rgba(26,46,31,0.92) 100%
+      );
+    }
+    .login-imagem-conteudo {
+      position: relative;
+      z-index: 2;
+      color: #fff;
+    }
+    .login-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .45rem;
+      background: rgba(181,135,58,.85);
+      color: #fff;
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: .35rem .9rem;
+      border-radius: 50px;
+      margin-bottom: 1.1rem;
+    }
+    .login-imagem-conteudo h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.4rem;
+      line-height: 1.2;
+      margin-bottom: .75rem;
+    }
+    .login-imagem-conteudo h2 em { color: var(--dourado-cl); font-style: normal; }
+    .login-imagem-conteudo p { font-size: .95rem; opacity: .8; max-width: 360px; line-height: 1.6; }
+
+    .login-features {
+      display: flex;
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .feat {
+      display: flex;
+      align-items: center;
+      gap: .45rem;
+      font-size: .8rem;
+      opacity: .85;
+    }
+    .feat span { font-size: 1.1rem; }
+
+    /* ── LADO DIREITO: formulário ── */
+    .login-form-side {
+      width: 420px;
+      flex-shrink: 0;
+      background: var(--creme);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 3rem 2.5rem;
+    }
+    .lf-logo {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      margin-bottom: 2.2rem;
+    }
+    .lf-logo .logo-icon {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--verde), var(--escuro));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+    }
+    .lf-logo .logo-text h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem;
+      color: var(--escuro);
+      line-height: 1.1;
+    }
+    .lf-logo .logo-text h1 em { color: var(--verde); font-style: normal; }
+    .lf-logo .logo-text p { font-size: .72rem; color: var(--cinza); margin-top: .1rem; }
+
+    .lf-titulo { margin-bottom: 1.6rem; }
+    .lf-titulo h2 { font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--escuro); }
+    .lf-titulo p  { color: var(--cinza); font-size: .875rem; margin-top: .3rem; }
+
+    .field { margin-bottom: 1rem; }
+    .field label {
+      display: block;
+      font-size: .8rem;
+      font-weight: 600;
+      color: var(--escuro);
+      margin-bottom: .3rem;
+    }
+    .field-inner { position: relative; }
+    .field-inner .icon {
+      position: absolute;
+      left: .85rem; top: 50%;
+      transform: translateY(-50%);
+      font-size: 1rem;
+      pointer-events: none;
+    }
+    .field-inner input {
+      width: 100%;
+      padding: .72rem .9rem .72rem 2.4rem;
+      border: 2px solid var(--cinza-cl);
+      border-radius: var(--r-sm);
+      font-family: 'DM Sans', sans-serif;
+      font-size: .93rem;
+      background: #fff;
+      color: var(--escuro);
+      outline: none;
+      transition: border-color .18s, box-shadow .18s;
+    }
+    .field-inner input:focus {
+      border-color: var(--verde);
+      box-shadow: 0 0 0 3px rgba(45,106,79,.1);
+    }
+
+    .btn-entrar {
+      width: 100%;
+      padding: .82rem;
+      background: linear-gradient(135deg, var(--verde), var(--verde-hover));
+      color: #fff;
+      border: none;
+      border-radius: var(--r-sm);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: .5rem;
+      letter-spacing: .02em;
+      transition: transform .15s, box-shadow .15s;
+      box-shadow: 0 4px 14px rgba(45,106,79,.3);
+    }
+    .btn-entrar:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(45,106,79,.4);
+    }
+    .btn-entrar:active { transform: scale(.98); }
+
+    .login-hint-box {
+      margin-top: 1.5rem;
+      background: var(--verde-suave);
+      border: 1px solid rgba(45,106,79,.2);
+      border-radius: var(--r-sm);
+      padding: .75rem 1rem;
+      font-size: .8rem;
+      color: var(--verde);
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+
+    .login-footer {
+      margin-top: 2rem;
+      font-size: .75rem;
+      color: var(--cinza);
+      text-align: center;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 820px) {
+      .login-imagem { display: none; }
+      .login-form-side { width: 100%; min-height: 100vh; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LADO ESQUERDO: imagem temática -->
+<div class="login-imagem">
+  <img
+    src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&q=80&auto=format&fit=crop"
+    alt="Quiosque à beira-mar"
+    loading="eager"
+  >
+  <div class="login-imagem-overlay"></div>
+  <div class="login-imagem-conteudo">
+    <div class="login-badge">🏝️ Aluguel de Quiosques</div>
+    <h2>Seu espaço perfeito<br>para <em>momentos especiais</em></h2>
+    <p>Alugue quiosques exclusivos à beira-mar, no jardim, na piscina ou no bosque. Reserva rápida, segura e sem complicação.</p>
+    <div class="login-features">
+      <div class="feat"><span>🗓️</span> Reserva online</div>
+      <div class="feat"><span>💳</span> Múltiplas formas de pagamento</div>
+      <div class="feat"><span>✅</span> Confirmação imediata</div>
+      <div class="feat"><span>🏖️</span> 4 espaços disponíveis</div>
+    </div>
+  </div>
+</div>
+
+<!-- LADO DIREITO: formulário -->
+<div class="login-form-side">
+
+  <div class="lf-logo">
+    <div class="logo-icon">🏝️</div>
+    <div class="logo-text">
+      <h1>Kiosque <em>Rental</em></h1>
+      <p>Sistema de Reservas</p>
+    </div>
+  </div>
+
+  <div class="lf-titulo">
+    <h2>Bem-vindo de volta</h2>
+    <p>Entre com suas credenciais para acessar o sistema.</p>
+  </div>
+
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in msgs %}
+      <div class="alert alert-{{ cat }}" style="margin-bottom:1rem;">⚠️ {{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <form method="POST" action="{{ url_for('main.login') }}">
+    <div class="field">
+      <label for="login">Usuário</label>
+      <div class="field-inner">
+        <span class="icon">👤</span>
+        <input type="text" id="login" name="login" placeholder="Digite seu usuário" required autocomplete="off">
+      </div>
+    </div>
+    <div class="field">
+      <label for="senha">Senha</label>
+      <div class="field-inner">
+        <span class="icon">🔒</span>
+        <input type="password" id="senha" name="senha" placeholder="Digite sua senha" required>
+      </div>
+    </div>
+    <button type="submit" class="btn-entrar">Entrar no Sistema →</button>
+  </form>
+
+  <div class="login-hint-box">
+    💡 Acesso padrão: usuário <strong style="margin:0 .25rem;">123</strong> / senha <strong style="margin:0 .25rem;">123</strong>
+  </div>
+
+  <div class="login-footer">
+    © 2026 Kiosque Rental · Todos os direitos reservados
+  </div>
+
+</div>
+
+</body>
+</html>

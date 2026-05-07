@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reservar — {{ quiosque.nome }}</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    /* ══════════════════════════════════════════
+       CALENDÁRIO
+    ══════════════════════════════════════════ */
+    .cal-wrap {
+      background: var(--creme);
+      border: 1.5px solid var(--cinza-cl);
+      border-radius: var(--r-sm);
+      padding: .8rem;
+      margin-bottom: .75rem;
+    }
+    .cal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: .6rem;
+    }
+    .cal-header span {
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      font-size: .95rem;
+      color: var(--escuro);
+    }
+    .cal-nav {
+      background: #fff;
+      border: 1.5px solid var(--cinza-cl);
+      border-radius: 6px;
+      width: 28px; height: 28px;
+      cursor: pointer;
+      font-size: 1rem;
+      color: var(--verde);
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s;
+    }
+    .cal-nav:hover { background: var(--verde-suave); }
+
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+    }
+    .cal-dow {
+      text-align: center;
+      font-size: .65rem;
+      font-weight: 700;
+      color: var(--cinza);
+      padding: .25rem 0;
+      letter-spacing: .03em;
+    }
+
+    /* ── Célula base ── */
+    .cal-day {
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .77rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1.5px solid transparent;
+      border-radius: 6px;
+      transition: all .12s;
+      position: relative;
+      color: var(--escuro);
+      background: #fff;
+      user-select: none;
+    }
+
+    /* Hover em dias livres */
+    .cal-day:hover:not(.reserved):not(.past):not(.empty) {
+      background: var(--verde-suave);
+      border-color: var(--verde);
+      color: var(--verde);
+    }
+
+    /* Estados fixos */
+    .cal-day.empty    { background: transparent; border: none; cursor: default; }
+    .cal-day.past     { color: #ccc; background: transparent; border: none; cursor: not-allowed; }
+    .cal-day.today    { border-color: var(--verde); color: var(--verde); font-weight: 700; }
+
+    /* Reservado */
+    .cal-day.reserved {
+      background: #fde8e8 !important;
+      color: var(--erro) !important;
+      border-color: #f5c6c6 !important;
+      cursor: not-allowed;
+      font-weight: 600;
+    }
+    .cal-day.reserved::after {
+      content: '';
+      position: absolute;
+      bottom: 2px; left: 50%;
+      transform: translateX(-50%);
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: var(--erro);
+    }
+
+    /* ── SELEÇÃO DE INTERVALO ── */
+    /* Primeiro dia selecionado */
+    .cal-day.sel-start {
+      background: var(--verde) !important;
+      color: #fff !important;
+      border-color: var(--verde) !important;
+      border-radius: 6px 0 0 6px !important;
+      font-weight: 700;
+    }
+    /* Último dia selecionado */
+    .cal-day.sel-end {
+      background: var(--verde) !important;
+      color: #fff !important;
+      border-color: var(--verde) !important;
+      border-radius: 0 6px 6px 0 !important;
+      font-weight: 700;
+    }
+    /* Dia único (inicio = fim) */
+    .cal-day.sel-start.sel-end {
+      border-radius: 6px !important;
+    }
+    /* Dias do meio do intervalo */
+    .cal-day.sel-mid {
+      background: #c8e6d2 !important;
+      color: var(--verde) !important;
+      border-color: transparent !important;
+      border-radius: 0 !important;
+      font-weight: 600;
+    }
+    /* Preview ao passar o mouse (antes de confirmar o fim) */
+    .cal-day.preview {
+      background: #ddf0e4 !important;
+      color: var(--verde) !important;
+      border-color: transparent !important;
+      border-radius: 0 !important;
+    }
+
+    /* ── LEGENDA ── */
+    .cal-legenda {
+      display: flex;
+      gap: 1rem;
+      margin-top: .65rem;
+      flex-wrap: wrap;
+    }
+    .leg-item { display: flex; align-items: center; gap: .3rem; font-size: .68rem; color: var(--cinza); }
+    .leg-dot  { width: 11px; height: 11px; border-radius: 3px; flex-shrink: 0; }
+    .leg-dot.verde    { background: var(--verde); }
+    .leg-dot.meio     { background: #c8e6d2; }
+    .leg-dot.vermelho { background: #fde8e8; border: 1.5px solid #f5c6c6; }
+    .leg-dot.hoje     { border: 2px solid var(--verde); background: #fff; }
+
+    /* ── INSTRUÇÃO DO CALENDÁRIO ── */
+    .cal-instrucao {
+      font-size: .75rem;
+      color: var(--cinza);
+      text-align: center;
+      padding: .3rem 0 .1rem;
+      font-style: italic;
+    }
+    .cal-instrucao strong { color: var(--verde); font-style: normal; }
+
+    /* ── RESUMO DO PERÍODO ── */
+    .periodo-resumo {
+      display: none;
+      background: linear-gradient(135deg, var(--verde), var(--verde-hover));
+      color: #fff;
+      border-radius: var(--r-sm);
+      padding: .85rem 1rem;
+      margin-bottom: .75rem;
+    }
+    .periodo-resumo.show { display: block; }
+    .periodo-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: .5rem;
+    }
+    .periodo-datas { font-size: .92rem; font-weight: 700; }
+    .periodo-datas span { font-size: .75rem; font-weight: 400; opacity: .8; display: block; margin-top: .1rem; }
+    .periodo-total {
+      text-align: right;
+    }
+    .periodo-total .dias { font-size: .72rem; opacity: .8; }
+    .periodo-total .valor {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--dourado-cl);
+    }
+    .periodo-barra {
+      display: flex;
+      gap: .75rem;
+      font-size: .75rem;
+      opacity: .85;
+      border-top: 1px solid rgba(255,255,255,.2);
+      padding-top: .4rem;
+    }
+
+    /* ── ALERTA DE DISPONIBILIDADE ── */
+    .disp-ok  { display:block; background:var(--ok-bg);   color:var(--ok);  padding:.5rem .8rem; border-radius:var(--r-sm); font-size:.82rem; font-weight:600; margin-bottom:.6rem; }
+    .disp-err { display:block; background:var(--erro-bg); color:var(--erro); padding:.5rem .8rem; border-radius:var(--r-sm); font-size:.82rem; font-weight:600; margin-bottom:.6rem; }
+    #disp-msg { display: none; }
+
+    /* ── BOTÃO LIMPAR ── */
+    .btn-limpar {
+      font-size: .72rem;
+      color: rgba(255,255,255,.75);
+      background: rgba(255,255,255,.15);
+      border: none;
+      border-radius: 50px;
+      padding: .2rem .65rem;
+      cursor: pointer;
+      margin-top: .3rem;
+      display: inline-block;
+    }
+    .btn-limpar:hover { background: rgba(255,255,255,.25); color: #fff; }
+
+    /* ── CARTÃO VISUAL ── */
+    .card-wrap { display: none; margin-top: .6rem; }
+    .card-wrap.show { display: block; }
+    .cartao {
+      width: 100%;
+      aspect-ratio: 1.586;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #1a2e1f 0%, #2d6a4f 55%, #52b788 100%);
+      padding: 1.3rem 1.4rem;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 1rem;
+      box-shadow: 0 10px 28px rgba(45,106,79,.4);
+    }
+    .cartao::before {
+      content: '';
+      position: absolute; top: -50px; right: -50px;
+      width: 180px; height: 180px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.06);
+    }
+    .cartao::after {
+      content: '';
+      position: absolute; bottom: -60px; left: -40px;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.04);
+    }
+    .cartao-topo { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: .9rem; }
+    .cartao-chip {
+      width: 34px; height: 26px;
+      background: linear-gradient(135deg, #f0c96b, #b5873a);
+      border-radius: 5px;
+      position: relative;
+    }
+    .cartao-chip::before {
+      content: '';
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      width: 20px; height: 14px;
+      border: 1.5px solid rgba(0,0,0,.2);
+      border-radius: 3px;
+    }
+    .cartao-bandeira { font-size: .72rem; font-weight: 700; letter-spacing: .06em; opacity: .85; }
+    .cartao-numero {
+      font-size: .95rem;
+      letter-spacing: .18em;
+      font-family: 'Courier New', monospace;
+      margin-bottom: .8rem;
+      position: relative; z-index: 1;
+    }
+    .cartao-rodape { display: flex; justify-content: space-between; align-items: flex-end; position: relative; z-index: 1; }
+    .cartao-lbl { font-size: .58rem; opacity: .6; letter-spacing: .08em; text-transform: uppercase; margin-bottom: .12rem; }
+    .cartao-val { font-size: .82rem; font-weight: 600; letter-spacing: .04em; }
+
+    .campos-cartao { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+    .campo-full { grid-column: 1 / -1; }
+    .fc label { display: block; font-size: .75rem; font-weight: 600; color: var(--cinza); margin-bottom: .22rem; }
+    .fc input, .fc select {
+      width: 100%;
+      padding: .58rem .8rem;
+      border: 1.5px solid var(--cinza-cl);
+      border-radius: var(--r-sm);
+      font-size: .875rem;
+      font-family: 'DM Sans', sans-serif;
+      background: #fff;
+      color: var(--escuro);
+      outline: none;
+      transition: border-color .18s;
+    }
+    .fc input:focus, .fc select:focus { border-color: var(--verde); }
+    .fc input.mono { font-family: 'Courier New', monospace; letter-spacing: .1em; }
+    .btn-gerar {
+      display: inline-flex; align-items: center; gap: .3rem;
+      font-size: .72rem; color: var(--verde); background: var(--verde-suave);
+      border: none; border-radius: 50px; padding: .25rem .65rem;
+      cursor: pointer; font-weight: 600; margin-top: .28rem;
+      transition: background .15s;
+    }
+    .btn-gerar:hover { background: #c0dfc8; }
+
+    .pix-box, .dinheiro-box {
+      display: none; border-radius: var(--r-sm);
+      padding: .9rem 1rem; margin-top: .5rem; font-size: .85rem;
+    }
+    .pix-box { background: var(--verde-suave); border: 1.5px solid var(--verde); color: var(--verde); }
+    .pix-box.show { display: block; }
+    .pix-chave { font-weight: 700; font-size: .95rem; word-break: break-all; margin: .35rem 0 .5rem; }
+    .dinheiro-box { background: #fff8e1; border: 1.5px solid #f0c96b; color: #7a5c00; }
+    .dinheiro-box.show { display: block; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="{{ url_for('main.quiosques') }}" class="nav-brand">🏝️ Kiosque <span>Rental</span></a>
+  <div class="nav-links">
+    <a href="{{ url_for('main.quiosques') }}">Quiosques</a>
+    <a href="{{ url_for('main.minhas_reservas') }}">Minhas Reservas</a>
+    <a href="{{ url_for('main.logout') }}" class="nav-sair">Sair</a>
+  </div>
+</nav>
+
+<div class="wrap" style="max-width:1000px;">
+
+  <a href="{{ url_for('main.quiosques') }}" class="back-link">← Voltar aos Quiosques</a>
+
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in msgs %}
+      <div class="alert alert-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <div class="reserva-grid" style="grid-template-columns: 280px 1fr;">
+
+    <!-- ══ COLUNA ESQUERDA: info + regras ══ -->
+    <div>
+      <div class="panel">
+        <div class="panel-head">
+          <h2>{{ quiosque.nome }}</h2>
+          <p>{{ quiosque.descricao }}</p>
+        </div>
+        <div class="panel-body">
+          <div class="info-row">
+            <span class="lbl">👥 Capacidade</span>
+            <span class="val">Até {{ quiosque.capacidade }} pessoas</span>
+          </div>
+          <div class="info-row">
+            <span class="lbl">💰 Valor/dia</span>
+            <span class="val verde">R$ {{ "%.2f"|format(quiosque.preco_dia) }}</span>
+          </div>
+          <div class="info-row">
+            <span class="lbl">📍 Identificação</span>
+            <span class="val">Quiosque #{{ quiosque.id }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="regras">
+        <h4>📋 Regras de Uso</h4>
+        <ul>
+          <li>Devolva o quiosque limpo e organizado ao final do período.</li>
+          <li>Som acima de 80 dB não é permitido após as 22h.</li>
+          <li>Respeite a capacidade máxima de {{ quiosque.capacidade }} pessoas.</li>
+          <li>Animais são permitidos sob responsabilidade do locatário.</li>
+          <li>Danos ao patrimônio serão cobrados do responsável.</li>
+          <li>Cancelamentos com menos de 24h não geram reembolso.</li>
+          <li>Bebidas alcoólicas permitidas com moderação.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ══ COLUNA DIREITA: formulário ══ -->
+    <div class="panel">
+      <div class="panel-head">
+        <h2>📝 Dados da Reserva</h2>
+        <p>Selecione o período e preencha as informações</p>
+      </div>
+      <div class="panel-body">
+        <form method="POST" action="{{ url_for('main.reserva', quiosque_id=quiosque.id) }}">
+
+          <!-- Campos ocultos preenchidos pelo JS -->
+          <input type="hidden" id="data_inicio" name="data_inicio" required>
+          <input type="hidden" id="data_fim"    name="data_fim"    required>
+
+          <!-- ── NOME ── -->
+          <div class="field">
+            <label for="nome_cliente">Nome completo do responsável</label>
+            <input type="text" id="nome_cliente" name="nome_cliente"
+                   placeholder="Ex: João da Silva" required>
+          </div>
+
+          <!-- ── CALENDÁRIO DE INTERVALO ── -->
+          <div class="field">
+            <label>Período de locação</label>
+
+            <div class="cal-wrap">
+              <div class="cal-header">
+                <button type="button" class="cal-nav" id="btn-prev">‹</button>
+                <span id="cal-titulo"></span>
+                <button type="button" class="cal-nav" id="btn-next">›</button>
+              </div>
+              <p class="cal-instrucao" id="cal-instrucao">
+                Clique no <strong>1º dia</strong> e depois no <strong>último dia</strong> desejado
+              </p>
+              <div class="cal-grid" id="cal-grid"></div>
+              <div class="cal-legenda">
+                <div class="leg-item"><div class="leg-dot verde"></div> Entrada / Saída</div>
+                <div class="leg-item"><div class="leg-dot meio"></div> Período</div>
+                <div class="leg-item"><div class="leg-dot vermelho"></div> Reservado</div>
+                <div class="leg-item"><div class="leg-dot hoje"></div> Hoje</div>
+              </div>
+            </div>
+
+            <!-- Resumo do período selecionado -->
+            <div class="periodo-resumo" id="periodo-resumo">
+              <div class="periodo-top">
+                <div class="periodo-datas">
+                  <span id="pr-label-datas">Período</span>
+                  <span id="pr-label-dias"></span>
+                </div>
+                <div class="periodo-total">
+                  <div class="dias" id="pr-qtd-dias"></div>
+                  <div class="valor" id="pr-valor-total"></div>
+                </div>
+              </div>
+              <div class="periodo-barra">
+                <span>📅 <span id="pr-entrada"></span></span>
+                <span>→</span>
+                <span>🏁 <span id="pr-saida"></span></span>
+                <button type="button" class="btn-limpar" onclick="limparSelecao()">✕ Limpar</button>
+              </div>
+            </div>
+
+            <div id="disp-msg"></div>
+          </div>
+
+          <!-- ── PAGAMENTO ── -->
+          <div class="field">
+            <label>Forma de pagamento</label>
+            <div class="pag-grid">
+              <label class="pag-item" onclick="selecionarPag(this,'PIX')">
+                <input type="radio" name="forma_pagamento" value="PIX" required>
+                <span class="ico">💠</span><span class="txt">PIX</span>
+              </label>
+              <label class="pag-item" onclick="selecionarPag(this,'Débito')">
+                <input type="radio" name="forma_pagamento" value="Débito">
+                <span class="ico">💳</span><span class="txt">Débito</span>
+              </label>
+              <label class="pag-item" onclick="selecionarPag(this,'Crédito')">
+                <input type="radio" name="forma_pagamento" value="Crédito">
+                <span class="ico">💳</span><span class="txt">Crédito</span>
+              </label>
+              <label class="pag-item" onclick="selecionarPag(this,'Dinheiro')">
+                <input type="radio" name="forma_pagamento" value="Dinheiro">
+                <span class="ico">💵</span><span class="txt">Dinheiro</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- PIX -->
+          <div class="pix-box" id="box-pix">
+            <strong>💠 Pagamento via PIX</strong>
+            <div class="pix-chave">kiosquerental@email.com</div>
+            <span style="font-size:.78rem;opacity:.85;">Após confirmar, realize o pagamento e apresente o comprovante na recepção.</span>
+          </div>
+
+          <!-- CARTÃO -->
+          <div class="card-wrap" id="box-cartao">
+            <div class="cartao">
+              <div class="cartao-topo">
+                <div class="cartao-chip"></div>
+                <div class="cartao-bandeira" id="cv-bandeira">VISA</div>
+              </div>
+              <div class="cartao-numero" id="cv-numero">•••• •••• •••• ••••</div>
+              <div class="cartao-rodape">
+                <div>
+                  <div class="cartao-lbl">Titular</div>
+                  <div class="cartao-val" id="cv-nome">NOME DO TITULAR</div>
+                </div>
+                <div style="text-align:right;">
+                  <div class="cartao-lbl">Validade</div>
+                  <div class="cartao-val" id="cv-val">MM/AA</div>
+                </div>
+              </div>
+            </div>
+            <div class="campos-cartao">
+              <div class="fc campo-full">
+                <label>Número do cartão</label>
+                <input type="text" id="c-numero" placeholder="0000 0000 0000 0000"
+                       maxlength="19" class="mono" oninput="fmtNum(this);atualizarCartao()">
+                <button type="button" class="btn-gerar" onclick="gerarAleatorio()">🎲 Gerar dados aleatórios</button>
+              </div>
+              <div class="fc campo-full">
+                <label>Nome do titular</label>
+                <input type="text" id="c-nome" placeholder="NOME SOBRENOME"
+                       oninput="atualizarCartao()" style="text-transform:uppercase;">
+              </div>
+              <div class="fc">
+                <label>Validade</label>
+                <input type="text" id="c-validade" placeholder="MM/AA" maxlength="5"
+                       class="mono" oninput="fmtVal(this);atualizarCartao()">
+              </div>
+              <div class="fc">
+                <label>CVV</label>
+                <input type="text" id="c-cvv" placeholder="•••" maxlength="3"
+                       class="mono" oninput="this.value=this.value.replace(/\D/g,'')">
+              </div>
+              <div class="fc campo-full">
+                <label>Bandeira</label>
+                <select id="c-bandeira" onchange="atualizarCartao()">
+                  <option value="VISA">💳 Visa</option>
+                  <option value="MASTERCARD">💳 Mastercard</option>
+                  <option value="ELO">💳 Elo</option>
+                  <option value="AMEX">💳 American Express</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- DINHEIRO -->
+          <div class="dinheiro-box" id="box-dinheiro">
+            💵 <strong>Pagamento em dinheiro</strong><br>
+            <span style="font-size:.82rem;">Pagamento presencial na recepção no dia da entrada. Tenha o valor total disponível.</span>
+          </div>
+
+          <div style="margin-top:1.1rem;">
+            <p style="font-size:.75rem;color:var(--cinza);margin-bottom:.8rem;">
+              ✅ Ao confirmar, você declara que leu e concorda com as regras de uso do quiosque.
+            </p>
+            <button type="submit" id="btn-reservar" class="btn btn-primary btn-full btn-lg"
+                    disabled style="opacity:.45;">
+              Confirmar Reserva
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════════════════════
+const QID       = {{ quiosque.id }};
+const PRECO_DIA = {{ quiosque.preco_dia }};
+const HOJE_STR  = '{{ hoje }}';
+const HOJE      = new Date(HOJE_STR + 'T00:00:00');
+const MESES     = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                   'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const DOW       = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+let calAno  = HOJE.getFullYear();
+let calMes  = HOJE.getMonth();
+let reservadas = new Set();   // datas já ocupadas (strings YYYY-MM-DD)
+
+// Estado da seleção
+let selInicio = null;   // YYYY-MM-DD
+let selFim    = null;   // YYYY-MM-DD
+let esperandoFim = false;   // true = 1º clique feito, aguardando 2º
+let hoverData = null;       // data sobre a qual o mouse está
+
+// ══════════════════════════════════════════════════════════
+//  UTILITÁRIOS
+// ══════════════════════════════════════════════════════════
+function toDate(s) { return new Date(s + 'T00:00:00'); }
+function toStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function formatBR(s) {
+  const [a,m,d] = s.split('-');
+  return `${d}/${m}/${a}`;
+}
+function addDias(s, n) {
+  const d = toDate(s);
+  d.setDate(d.getDate() + n);
+  return toStr(d);
+}
+function diffDias(ini, fim) {
+  return Math.round((toDate(fim) - toDate(ini)) / 86400000) + 1;
+}
+function formatBRL(v) {
+  return v.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+}
+
+// ── Gera array de todas as datas do intervalo [ini, fim]
+function datasIntervalo(ini, fim) {
+  const lista = [];
+  let cur = toDate(ini);
+  const end = toDate(fim);
+  while (cur <= end) {
+    lista.push(toStr(cur));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return lista;
+}
+
+// ── Verifica se alguma data do intervalo está reservada
+function intervaloLivre(ini, fim) {
+  for (const d of datasIntervalo(ini, fim)) {
+    if (reservadas.has(d)) return false;
+  }
+  return true;
+}
+
+// ══════════════════════════════════════════════════════════
+//  CARREGA DATAS RESERVADAS
+// ══════════════════════════════════════════════════════════
+async function carregarDatas() {
+  try {
+    const r = await fetch(`/datas-reservadas/${QID}`);
+    const j = await r.json();
+    reservadas = new Set(j.datas);
+  } catch(e) {}
+  renderCal();
+}
+
+// ══════════════════════════════════════════════════════════
+//  RENDERIZA CALENDÁRIO
+// ══════════════════════════════════════════════════════════
+function renderCal() {
+  document.getElementById('cal-titulo').textContent = `${MESES[calMes]} ${calAno}`;
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+
+  // Cabeçalho dias da semana
+  DOW.forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'cal-dow';
+    el.textContent = d;
+    grid.appendChild(el);
+  });
+
+  const offset    = new Date(calAno, calMes, 1).getDay();
+  const totalDias = new Date(calAno, calMes + 1, 0).getDate();
+
+  // Células vazias
+  for (let i = 0; i < offset; i++) {
+    const el = document.createElement('div');
+    el.className = 'cal-day empty';
+    grid.appendChild(el);
+  }
+
+  // Determina preview range (enquanto aguarda 2º clique)
+  let previewIni = null, previewFim = null;
+  if (esperandoFim && selInicio && hoverData) {
+    const a = toDate(selInicio), b = toDate(hoverData);
+    if (b >= a) { previewIni = selInicio; previewFim = hoverData; }
+    else         { previewIni = hoverData; previewFim = selInicio; }
+  }
+
+  for (let d = 1; d <= totalDias; d++) {
+    const dataStr = `${calAno}-${String(calMes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dt      = toDate(dataStr);
+    const el      = document.createElement('div');
+
+    const isPast     = dt < HOJE;
+    const isReserved = reservadas.has(dataStr);
+    const isToday    = dataStr === HOJE_STR;
+
+    // Classificar dentro do intervalo selecionado
+    let inSel = false, isStart = false, isEnd = false, isMid = false;
+    if (selInicio && selFim) {
+      isStart = dataStr === selInicio;
+      isEnd   = dataStr === selFim;
+      isMid   = !isStart && !isEnd && dataStr > selInicio && dataStr < selFim;
+      inSel   = isStart || isEnd || isMid;
+    } else if (selInicio && !selFim) {
+      isStart = dataStr === selInicio;
+    }
+
+    // Classificar dentro do preview
+    let inPreview = false;
+    if (previewIni && previewFim) {
+      inPreview = dataStr > previewIni && dataStr < previewFim && !isReserved;
+    }
+
+    // Montar classes
+    let cls = 'cal-day';
+    if (isPast)       cls += ' past';
+    else if (isReserved) cls += ' reserved';
+    else if (isToday && !inSel) cls += ' today';
+
+    if (isStart) cls += ' sel-start';
+    if (isEnd)   cls += ' sel-end';
+    if (isMid)   cls += ' sel-mid';
+    if (inPreview && !inSel) cls += ' preview';
+
+    el.className   = cls;
+    el.textContent = d;
+    el.dataset.data = dataStr;
+
+    if (isReserved) el.title = 'Já reservado';
+
+    // Guarda dataStr no dataset para delegação de eventos
+    el.dataset.data = dataStr;
+    if (isPast || isReserved) el.dataset.bloq = '1';
+
+    grid.appendChild(el);
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  LÓGICA DE SELEÇÃO (2 cliques)
+// ══════════════════════════════════════════════════════════
+function clicarDia(dataStr) {
+  if (!esperandoFim) {
+    // 1º clique: define início
+    selInicio    = dataStr;
+    selFim       = null;
+    esperandoFim = true;
+    document.getElementById('cal-instrucao').innerHTML =
+      'Agora clique no <strong>último dia</strong> do período';
+    ocultarResumo();
+    setBotao(false);
+  } else {
+    // 2º clique: define fim
+    const a = toDate(selInicio), b = toDate(dataStr);
+
+    // Se clicou no mesmo dia ou antes: 1 dia apenas
+    if (b < a) {
+      // reinicia
+      selInicio    = dataStr;
+      selFim       = null;
+      esperandoFim = true;
+      document.getElementById('cal-instrucao').innerHTML =
+        'Agora clique no <strong>último dia</strong> do período';
+      renderCal();
+      return;
+    }
+
+    selFim       = dataStr;
+    esperandoFim = false;
+    document.getElementById('cal-instrucao').innerHTML =
+      'Clique no <strong>1º dia</strong> e depois no <strong>último dia</strong> desejado';
+
+    // Verifica se intervalo tem alguma data reservada
+    if (!intervaloLivre(selInicio, selFim)) {
+      mostrarMsg('❌ O período selecionado contém datas já reservadas. Escolha outro período.', 'err');
+      limparSelecao();
+      return;
+    }
+
+    confirmarIntervalo();
+  }
+  renderCal();
+}
+
+async function confirmarIntervalo() {
+  mostrarMsg('⏳ Verificando disponibilidade do período...', null);
+  try {
+    const res  = await fetch('/verificar-intervalo', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({quiosque_id: QID, data_inicio: selInicio, data_fim: selFim})
+    });
+    const json = await res.json();
+    if (json.disponivel) {
+      document.getElementById('data_inicio').value = selInicio;
+      document.getElementById('data_fim').value    = selFim;
+      mostrarResumo();
+      mostrarMsg('✅ Período disponível! Preencha os dados abaixo.', 'ok');
+      setBotao(true);
+    } else {
+      mostrarMsg(`❌ Datas indisponíveis: ${json.bloqueadas.map(formatBR).join(', ')}`, 'err');
+      json.bloqueadas.forEach(d => reservadas.add(d));
+      limparSelecao();
+    }
+  } catch {
+    mostrarMsg('⚠️ Erro ao verificar. Tente novamente.', 'err');
+    limparSelecao();
+  }
+  renderCal();
+}
+
+function limparSelecao() {
+  selInicio = null; selFim = null;
+  esperandoFim = false;
+  document.getElementById('data_inicio').value = '';
+  document.getElementById('data_fim').value    = '';
+  document.getElementById('cal-instrucao').innerHTML =
+    'Clique no <strong>1º dia</strong> e depois no <strong>último dia</strong> desejado';
+  ocultarResumo();
+  ocultarMsg();
+  setBotao(false);
+  renderCal();
+}
+
+// ══════════════════════════════════════════════════════════
+//  RESUMO DO PERÍODO
+// ══════════════════════════════════════════════════════════
+function mostrarResumo() {
+  const dias  = diffDias(selInicio, selFim);
+  const total = dias * PRECO_DIA;
+  document.getElementById('pr-label-datas').textContent = `${formatBR(selInicio)} → ${formatBR(selFim)}`;
+  document.getElementById('pr-label-dias').textContent  = dias === 1 ? '1 diária' : `${dias} diárias`;
+  document.getElementById('pr-qtd-dias').textContent    = `${dias} × ${formatBRL(PRECO_DIA)}`;
+  document.getElementById('pr-valor-total').textContent = formatBRL(total);
+  document.getElementById('pr-entrada').textContent     = formatBR(selInicio);
+  document.getElementById('pr-saida').textContent       = formatBR(selFim);
+  document.getElementById('periodo-resumo').classList.add('show');
+}
+function ocultarResumo() {
+  document.getElementById('periodo-resumo').classList.remove('show');
+}
+
+// ══════════════════════════════════════════════════════════
+//  MENSAGENS
+// ══════════════════════════════════════════════════════════
+function mostrarMsg(txt, tipo) {
+  const el = document.getElementById('disp-msg');
+  el.className = tipo === 'ok' ? 'disp-ok' : tipo === 'err' ? 'disp-err' : '';
+  el.textContent = txt;
+  el.style.display = 'block';
+}
+function ocultarMsg() {
+  const el = document.getElementById('disp-msg');
+  el.style.display = 'none';
+}
+
+// ══════════════════════════════════════════════════════════
+//  BOTÃO + NAV
+// ══════════════════════════════════════════════════════════
+function setBotao(ok) {
+  const b = document.getElementById('btn-reservar');
+  b.disabled = !ok; b.style.opacity = ok ? '1' : '.45';
+}
+
+document.getElementById('btn-prev').onclick = () => {
+  if (--calMes < 0) { calMes = 11; calAno--; } renderCal();
+};
+document.getElementById('btn-next').onclick = () => {
+  if (++calMes > 11) { calMes = 0; calAno++; } renderCal();
+};
+
+// ── DELEGAÇÃO DE EVENTOS NO GRID (evita perda de listeners ao re-renderizar) ──
+const calGrid = document.getElementById('cal-grid');
+
+calGrid.addEventListener('click', (e) => {
+  const el = e.target.closest('.cal-day');
+  if (!el || el.dataset.bloq) return;
+  const data = el.dataset.data;
+  if (data) clicarDia(data);
+});
+
+calGrid.addEventListener('mouseover', (e) => {
+  const el = e.target.closest('.cal-day');
+  if (!el || el.dataset.bloq || el.classList.contains('empty')) return;
+  const data = el.dataset.data;
+  if (data && data !== hoverData) {
+    hoverData = data;
+    if (esperandoFim) renderCal();
+  }
+});
+
+calGrid.addEventListener('mouseleave', () => {
+  if (hoverData !== null) {
+    hoverData = null;
+    if (esperandoFim) renderCal();
+  }
+});
+
+// ══════════════════════════════════════════════════════════
+//  PAGAMENTO
+// ══════════════════════════════════════════════════════════
+function selecionarPag(el, tipo) {
+  document.querySelectorAll('.pag-item').forEach(i => i.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('box-pix').classList.toggle('show',      tipo === 'PIX');
+  document.getElementById('box-cartao').classList.toggle('show',   tipo === 'Débito' || tipo === 'Crédito');
+  document.getElementById('box-dinheiro').classList.toggle('show', tipo === 'Dinheiro');
+  if (tipo === 'Débito' || tipo === 'Crédito') gerarAleatorio();
+}
+
+// ══════════════════════════════════════════════════════════
+//  CARTÃO
+// ══════════════════════════════════════════════════════════
+function atualizarCartao() {
+  document.getElementById('cv-numero').textContent   = document.getElementById('c-numero').value   || '•••• •••• •••• ••••';
+  document.getElementById('cv-nome').textContent     = document.getElementById('c-nome').value.toUpperCase() || 'NOME DO TITULAR';
+  document.getElementById('cv-val').textContent      = document.getElementById('c-validade').value || 'MM/AA';
+  document.getElementById('cv-bandeira').textContent = document.getElementById('c-bandeira').value || 'VISA';
+}
+function fmtNum(i) {
+  let v = i.value.replace(/\D/g,'').substring(0,16);
+  i.value = v.replace(/(.{4})/g,'$1 ').trim();
+}
+function fmtVal(i) {
+  let v = i.value.replace(/\D/g,'');
+  if (v.length >= 3) v = v.slice(0,2)+'/'+v.slice(2,4);
+  i.value = v;
+}
+function gerarAleatorio() {
+  const grupos = Array.from({length:4}, () =>
+    Array.from({length:4}, () => Math.floor(Math.random()*9)+1).join('')
+  );
+  document.getElementById('c-numero').value = grupos.join(' ');
+  const nomes = ['CARLOS HENRIQUE SOUZA','ANA PAULA LIMA','PEDRO AUGUSTO ALVES',
+                 'MARIANA COSTA SILVA','LUCAS FERREIRA','JULIA MARTINS ROCHA',
+                 'RAFAEL OLIVEIRA','BEATRIZ SANTOS','THIAGO ROCHA PINTO','CAMILA ANDRADE'];
+  document.getElementById('c-nome').value = nomes[Math.floor(Math.random()*nomes.length)];
+  const hoje2 = new Date();
+  const mes   = String(Math.floor(Math.random()*12)+1).padStart(2,'0');
+  const ano   = String((hoje2.getFullYear()+Math.floor(Math.random()*4)+1)%100).padStart(2,'0');
+  document.getElementById('c-validade').value = `${mes}/${ano}`;
+  document.getElementById('c-cvv').value = Array.from({length:3},()=>Math.floor(Math.random()*9)+1).join('');
+  atualizarCartao();
+}
+
+// ══════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════
+carregarDatas();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reserva Confirmada — Kiosque Rental</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <a href="{{ url_for('main.quiosques') }}" class="nav-brand">🏝️ Kiosque <span>Rental</span></a>
+  <div class="nav-links">
+    <a href="{{ url_for('main.quiosques') }}">Quiosques</a>
+    <a href="{{ url_for('main.minhas_reservas') }}">Minhas Reservas</a>
+    <a href="{{ url_for('main.logout') }}" class="nav-sair">Sair</a>
+  </div>
+</nav>
+
+<div class="wrap-sm">
+  <div class="confirm-card">
+
+    <div class="confirm-head">
+      <span class="tick">✅</span>
+      <h2>Reserva Confirmada!</h2>
+      <p>Seu quiosque foi reservado com sucesso.</p>
+    </div>
+
+    <div class="confirm-body">
+      <h3 style="font-family:'Playfair Display',serif; margin-bottom:1rem; font-size:1.1rem;">
+        Resumo da Reserva
+      </h3>
+
+      <div class="resumo-row">
+        <span class="lbl">🏝️ Quiosque</span>
+        <span class="val">{{ reserva.quiosque_nome }}</span>
+      </div>
+      <div class="resumo-row">
+        <span class="lbl">👤 Responsável</span>
+        <span class="val">{{ reserva.nome_cliente }}</span>
+      </div>
+      <div class="resumo-row">
+        <span class="lbl">📅 Entrada</span>
+        <span class="val">{{ reserva.data_inicio }}</span>
+      </div>
+      <div class="resumo-row">
+        <span class="lbl">🏁 Saída</span>
+        <span class="val">{{ reserva.data_fim }}</span>
+      </div>
+      <div class="resumo-row">
+        <span class="lbl">🌙 Total de diárias</span>
+        <span class="val">{{ reserva.total_dias }} dia{{ 's' if reserva.total_dias > 1 else '' }}</span>
+      </div>
+      <div class="resumo-row">
+        <span class="lbl">💰 Valor total</span>
+        <span class="val big">R$ {{ "%.2f"|format(reserva.preco_dia * reserva.total_dias) }}</span>
+      </div>
+      <div class="resumo-row">
+        <span class="lbl">🔖 Nº Reserva</span>
+        <span class="val">#{{ "%04d"|format(reserva.id) }}</span>
+      </div>
+
+      {% set ico_pag = {'PIX':'💠','Débito':'💳','Crédito':'💳','Dinheiro':'💵'} %}
+      <div style="margin-top:.9rem;">
+        <span style="font-size:.82rem; color:var(--cinza);">Forma de Pagamento:</span><br>
+        <span class="pag-badge">
+          {{ ico_pag.get(reserva.forma_pagamento, '💰') }} {{ reserva.forma_pagamento }}
+        </span>
+      </div>
+
+      {% if reserva.forma_pagamento == 'PIX' %}
+      <div class="alert alert-info" style="margin-top:1.1rem;">
+        💠 Chave PIX: <strong>kiosquerental@email.com</strong> — Envie o comprovante na recepção.
+      </div>
+      {% elif 'Débito' in reserva.forma_pagamento or 'Crédito' in reserva.forma_pagamento %}
+      <div class="alert alert-info" style="margin-top:1.1rem;">
+        💳 Pagamento realizado na recepção no dia da reserva. Lembre-se de trazer seu cartão.
+      </div>
+      {% else %}
+      <div class="alert alert-info" style="margin-top:1.1rem;">
+        💵 Pagamento em dinheiro na recepção no dia da reserva. Tenha o valor exato.
+      </div>
+      {% endif %}
+
+      <div class="regras" style="margin-top:1.1rem;">
+        <h4>📋 Lembre-se</h4>
+        <ul>
+          <li>Devolva o quiosque limpo ao final do período.</li>
+          <li>Respeite a capacidade máxima e o horário de silêncio (22h).</li>
+          <li>Cancelamentos com menos de 24h não geram reembolso.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="confirm-foot">
+      <a href="{{ url_for('main.quiosques') }}" class="btn btn-outline" style="flex:1;">
+        Nova Reserva
+      </a>
+      <a href="{{ url_for('main.minhas_reservas') }}" class="btn btn-primary" style="flex:1;">
+        Minhas Reservas
+      </a>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

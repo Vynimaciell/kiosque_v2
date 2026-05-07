@@ -1,0 +1,23 @@
+# Banco de dados (será recriado no servidor)
+database/kiosque.db
+*.db
+*.sqlite
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+venv/
+.venv/
+env/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/settings.json
+
+# Windows
+INICIAR.bat
